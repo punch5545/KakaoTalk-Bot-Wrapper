@@ -5,7 +5,7 @@ Built on `java.net.http.HttpClient` / `java.net.http.WebSocket`; the only depend
 
 ```xml
 <dependency>
-  <groupId>com.kakaotalkbot</groupId>
+  <groupId>io.github.punch5545</groupId>
   <artifactId>kakaotalk-bot</artifactId>
   <version>0.1.0</version>
 </dependency>

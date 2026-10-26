@@ -7,7 +7,7 @@
 |------|--------|-----------|----------|
 | Node.js (TypeScript / JavaScript) | `kakaotalk-bot` (npm) | Node.js 20+ | [`nodejs/`](nodejs/) |
 | Python | `kakaotalk-bot` (PyPI) | Python 3.10+ | [`python/`](python/) |
-| Java | `com.kakaotalkbot:kakaotalk-bot` (Maven) | Java 11+ | [`java/`](java/) |
+| Java | `io.github.punch5545:kakaotalk-bot` (Maven Central) | Java 11+ | [`java/`](java/) |
 
 ## 제공 기능
 
@@ -113,6 +113,11 @@ gateway.connect();
 | Node.js | `tsc` 타입체크 + ESM/CJS 빌드, 모의 게이트웨이/REST 서버 통합 테스트 4건 통과 (`npm test`) |
 | Python | `compileall`, 모의 서버 통합 테스트 5건 통과 (`pytest`) |
 | Java | OpenJDK 27 + Maven 3.10 (`--release 11`)으로 컴파일, 단위 테스트 7건 + 모의 서버 통합 테스트 2건 통과 (`mvn test`) |
+
+## 배포
+
+세 레지스트리(npm, PyPI, Maven Central) 배포 절차는 [PUBLISHING.md](PUBLISHING.md)를 참고하세요.
+`v*` 태그를 푸시하면 GitHub Actions가 자동으로 배포합니다.
 
 ## 라이선스
 

@@ -9,6 +9,7 @@ description = "KakaoTalk Bot API client: REST API wrapper, Gateway (WebSocket) c
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+authors = [{ name = "jade (punch5545)" }]
 keywords = ["kakao", "kakaotalk", "bot", "chatbot", "gateway", "websocket"]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -25,11 +26,20 @@ dependencies = [
   "websockets>=12.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/punch5545/KakaoTalk-Bot-Wrapper/tree/main/python#readme"
+Repository = "https://github.com/punch5545/KakaoTalk-Bot-Wrapper"
+Issues = "https://github.com/punch5545/KakaoTalk-Bot-Wrapper/issues"
+Documentation = "https://developers.kakao.com/docs/ko/bot/common"
+
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "mypy>=1.10"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["kakaotalk_bot"]
+
+[tool.hatch.build.targets.sdist]
+include = ["kakaotalk_bot", "tests", "README.md", "LICENSE", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

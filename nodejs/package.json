@@ -3,6 +3,24 @@
   "version": "0.1.0",
   "description": "KakaoTalk Bot API client for Node.js: REST API wrapper, Gateway (WebSocket) client and webhook helpers",
   "license": "MIT",
+  "author": "jade (punch5545)",
+  "homepage": "https://github.com/punch5545/KakaoTalk-Bot-Wrapper/tree/main/nodejs#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/punch5545/KakaoTalk-Bot-Wrapper.git",
+    "directory": "nodejs"
+  },
+  "bugs": {
+    "url": "https://github.com/punch5545/KakaoTalk-Bot-Wrapper/issues"
+  },
+  "keywords": [
+    "kakao",
+    "kakaotalk",
+    "bot",
+    "chatbot",
+    "gateway",
+    "websocket"
+  ],
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -21,19 +39,16 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
+  "sideEffects": false,
   "engines": {
     "node": ">=20"
   },
-  "keywords": [
-    "kakao",
-    "kakaotalk",
-    "bot",
-    "chatbot",
-    "gateway",
-    "websocket"
-  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "npm run clean && npm run build:esm && npm run build:cjs",
     "build:esm": "tsc -p tsconfig.esm.json",

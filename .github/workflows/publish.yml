@@ -1,0 +1,80 @@
+# Publishes all three packages when a tag like v0.1.0 is pushed.
+# Each job can also be run on its own with "Run workflow" (workflow_dispatch).
+#
+# One-time setup (see PUBLISHING.md):
+#   npm   : add a Trusted Publisher for package "kakaotalk-bot" pointing at this repo + workflow (publish.yml)
+#   PyPI  : add a Trusted Publisher for project "kakaotalk-bot" (owner punch5545, repo KakaoTalk-Bot-Wrapper,
+#           workflow publish.yml, environment "pypi")
+#   Maven : repository secrets CENTRAL_USERNAME, CENTRAL_PASSWORD (Central Portal user token),
+#           GPG_PRIVATE_KEY (ASCII-armored), GPG_PASSPHRASE
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which registry to publish to
+        type: choice
+        default: all
+        options: [all, npm, pypi, maven]
+
+jobs:
+  npm:
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'npm'
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write   # OIDC for npm Trusted Publishing + provenance
+    defaults: { run: { working-directory: nodejs } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, registry-url: "https://registry.npmjs.org" }
+      - run: npm install -g npm@latest   # Trusted Publishing needs npm >= 11.5.1
+      - run: npm ci
+      - run: npm test
+      - run: npm publish --access public --provenance
+
+  pypi:
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'pypi'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write   # OIDC for PyPI Trusted Publishing
+    defaults: { run: { working-directory: python } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install build
+      - run: python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/dist/
+
+  maven:
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'maven'
+    runs-on: ubuntu-latest
+    environment: maven-central
+    defaults: { run: { working-directory: java } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+          server-id: central
+          server-username: CENTRAL_USERNAME
+          server-password: CENTRAL_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: GPG_PASSPHRASE
+      - run: mvn -B -P release deploy
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
