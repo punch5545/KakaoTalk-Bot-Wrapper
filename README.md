@@ -1,64 +1,33 @@
+[![CI](https://github.com/punch5545/KakaoTalk-Bot-Wrapper/actions/workflows/ci.yml/badge.svg)](https://github.com/punch5545/KakaoTalk-Bot-Wrapper/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/kakaotalk-bot?logo=npm&label=npm)](https://www.npmjs.com/package/kakaotalk-bot)
+[![PyPI](https://img.shields.io/pypi/v/kakaotalk-bot?logo=pypi&logoColor=white&label=PyPI)](https://pypi.org/project/kakaotalk-bot/)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.punch5545/kakaotalk-bot?logo=apachemaven&label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.punch5545/kakaotalk-bot)
+[![License](https://img.shields.io/github/license/punch5545/KakaoTalk-Bot-Wrapper)](LICENSE)
+
 # KakaoTalk Bot Wrapper
 
-카카오톡 봇 API([developers.kakao.com/docs/ko/bot](https://developers.kakao.com/docs/ko/bot/common))의
-**REST API**와 **게이트웨이(WebSocket)** 를 감싼 라이브러리입니다. 세 언어로 동일한 구조를 제공합니다.
+[카카오톡 봇 API](https://developers.kakao.com/docs/ko/bot/common)의 REST API와 게이트웨이(WebSocket)를 감싼 라이브러리입니다.
+Node.js, Python, Java 세 가지로 제공하며 클래스 구성과 동작은 같습니다.
 
-| 언어 | 패키지 | 요구 사항 | 디렉토리 |
-|------|--------|-----------|----------|
-| Node.js (TypeScript / JavaScript) | `kakaotalk-bot` (npm) | Node.js 20+ | [`nodejs/`](nodejs/) |
-| Python | `kakaotalk-bot` (PyPI) | Python 3.10+ | [`python/`](python/) |
-| Java | `io.github.punch5545:kakaotalk-bot` (Maven Central) | Java 11+ | [`java/`](java/) |
+| 언어 | 설치 | 요구 사항 | 문서 |
+|------|------|-----------|------|
+| Node.js | `npm install kakaotalk-bot` | Node.js 20+ | [nodejs/](nodejs/) |
+| Python | `pip install kakaotalk-bot` | Python 3.10+ | [python/](python/) |
+| Java | `io.github.punch5545:kakaotalk-bot:0.1.0` | Java 11+ | [java/](java/) |
 
-## 제공 기능
+## 구성
 
-### REST API 클라이언트 (`KakaoBotClient`)
+- **KakaoBotClient** — REST API. 메시지 콜백, 메시지 전송, 명령어 조회·수정, 도움말 조회·수정.
+- **KakaoBotGateway** — 웹소켓 게이트웨이. HELLO → IDENTIFY/RESUME → READY 핸드셰이크, HEARTBEAT, DISPATCH 이벤트 수신, 재연결.
+- **DispatchEvent** — 수신한 이벤트. `reply()` / `replyText()`로 콜백 토큰을 써서 바로 답장합니다.
+- **웹훅 헬퍼** — 웹훅 본문을 같은 DispatchEvent로 파싱하고 커스텀 헤더를 검증합니다.
+- **SkillResponse 빌더** — 말풍선 8종, 버튼, 퀵리플라이, 멘션을 만들고 개수 제한을 검사합니다.
 
-| 메서드 | 엔드포인트 | 비고 |
-|--------|------------|------|
-| `sendCallback(callbackToken, skillResponse)` | `POST /v1/bot/callback` | 콜백 토큰은 5분 내 1회만 사용 가능 |
-| `sendMessage(target, skillResponse)` / `sendToGroup` / `sendToUser` | `POST /v1/bot/send_message` | `botGroupKey` 또는 `botUserKey` 중 하나만 |
-| `getCommands()` | `GET /v1/bot/commands` | |
-| `updateCommands(utterances)` | `POST /v1/bot/commands/update` | 최대 30개, 전체 교체 |
-| `getGuide()` | `GET /v1/bot/guide` | |
-| `updateGuide(contents)` | `POST /v1/bot/guide/update` | |
+## 사용 예
 
-* `Authorization: KakaoAK ${BOT_TOKEN}` 헤더와 `X-Bot-Callback-Token` 헤더를 자동으로 붙입니다.
-* 4xx/5xx 응답은 `KakaoBotApiError`(Python: `KakaoBotApiError`, Java: `KakaoBotApiException`)로 변환되며
-  `status`, `code`(예: `-881`), `msg`, `extras`와 함께 에러 코드 문서의 한국어 설명을 담습니다.
+에코봇입니다. 받은 메시지를 그대로 돌려줍니다.
 
-### 게이트웨이 클라이언트 (`KakaoBotGateway`)
-
-문서의 웹소켓 프로토콜 흐름을 그대로 구현했습니다.
-
-1. `wss://bot-gateway.kakao.com/gateway` 연결 → `HELLO(10)` 수신, `heartbeat_interval` 저장
-2. `IDENTIFY(2)` 전송 → `READY(3)` 수신, `session_id` 저장 (재연결 시에는 `RESUME(6)`)
-3. `heartbeat_interval - margin` 주기로 `HEARTBEAT(1)` 전송, `HEARTBEAT_ACK(11)` 누락 감지 시 재연결
-4. `DISPATCH(0)` 수신 → `s` 저장, `t`별 이벤트 발행 (`MESSAGE_CREATE`, `ENTRANCE`, `CHAT_JOIN`, `LEAVE`, `AD_REWARD`)
-5. 이벤트 객체의 `reply(skillResponse)` / `replyText(text)`가 콜백 토큰으로 메시지 콜백 API를 호출
-
-재연결 규칙(문서의 Close code 표 기준):
-
-| Close code | 동작 |
-|-----------|------|
-| `1001` 서버 재시작 | 즉시 `RESUME` |
-| 네트워크 단절 / ACK 누락 | 지수 백오프(1s → 2s → 4s … 최대 30s) 후 `RESUME`, 실패 시 `IDENTIFY` |
-| `4009` 세션 만료 | 세션 초기화 후 새 `IDENTIFY` |
-| `4001` / `4003` / `4004` | 재연결 중단, `fatal` 에러 발행 |
-
-### 웹훅 헬퍼
-
-`parseWebhookEvent(body)`는 웹훅 요청 본문을 게이트웨이와 동일한 이벤트 객체로 바꿔 주고,
-`verifyCustomHeader(received, expected)`는 등록한 커스텀 헤더를 상수 시간으로 비교합니다.
-
-### SkillResponse 빌더
-
-`SimpleText`, `SimpleImage`, `TextCard`, `BasicCard`, `ListCard`, `ItemCard`, `CommerceCard`, `Carousel`
-컴포넌트와 버튼(10가지 액션), 퀵리플라이, 사용자 멘션(`{{#mentions.key}}` + `extra.mentions`) 생성을 돕고
-개수 제한(말풍선 3개, 퀵리플라이 10개, 멘션 15명)을 검증합니다.
-
-## 빠른 시작 (에코봇)
-
-**Node.js**
+Node.js
 
 ```ts
 import { KakaoBotGateway } from 'kakaotalk-bot';
@@ -69,7 +38,7 @@ gateway.on('error', console.error);
 await gateway.connect();
 ```
 
-**Python**
+Python
 
 ```python
 import asyncio
@@ -84,7 +53,7 @@ async def on_message(event):
 asyncio.run(gateway.run())
 ```
 
-**Java**
+Java
 
 ```java
 KakaoBotGateway gateway = KakaoBotGateway.builder(System.getenv("BOT_TOKEN"))
@@ -97,27 +66,38 @@ KakaoBotGateway gateway = KakaoBotGateway.builder(System.getenv("BOT_TOKEN"))
 gateway.connect();
 ```
 
-## 주의 사항
+웹훅 방식과 메시지 전송 API, 카드형 말풍선 예제는 언어별 README에 있습니다.
 
-* **메시지 id는 64비트 정수**(예: `558185822630215770`)입니다. JavaScript의 `Number`로는 정밀도가 깨지므로
-  Node.js 라이브러리는 `id`를 항상 문자열로 노출합니다. Python은 `int`, Java는 `long`으로 그대로 다룹니다.
-  웹훅에서는 가능하면 파싱 전 원본 문자열을 `parseWebhookEvent`에 넘기세요.
-* 웹훅 URL이 등록된 앱은 게이트웨이에 연결할 수 없습니다. 둘 중 하나만 사용하세요.
-* 웹훅은 1초 안에 2xx로 응답한 뒤 비동기로 `reply()`를 호출해야 합니다.
-* 게이트웨이의 이벤트 버퍼는 연결당 최근 100개입니다. 오랫동안 끊긴 뒤 `RESUME`하면 그 사이 이벤트는 복구되지 않을 수 있습니다.
+## 재연결 동작
 
-## 검증 상태
+문서의 Close code 표를 그대로 따릅니다.
 
-| 언어 | 검증 |
-|------|------|
-| Node.js | `tsc` 타입체크 + ESM/CJS 빌드, 모의 게이트웨이/REST 서버 통합 테스트 4건 통과 (`npm test`) |
-| Python | `compileall`, 모의 서버 통합 테스트 5건 통과 (`pytest`) |
-| Java | OpenJDK 27 + Maven 3.10 (`--release 11`)으로 컴파일, 단위 테스트 7건 + 모의 서버 통합 테스트 2건 통과 (`mvn test`) |
+| Close code | 동작 |
+|-----------|------|
+| 1001 서버 재시작 | 즉시 RESUME |
+| 네트워크 단절, HEARTBEAT_ACK 누락 | 1초 → 2초 → 4초 … 최대 30초 간격으로 RESUME 재시도 |
+| 4009 세션 만료 | 세션을 버리고 새로 IDENTIFY |
+| 4001, 4003, 4004 | 재연결하지 않고 fatal 에러 발행 |
 
-## 배포
+## 알아둘 점
 
-세 레지스트리(npm, PyPI, Maven Central) 배포 절차는 [PUBLISHING.md](PUBLISHING.md)를 참고하세요.
-`v*` 태그를 푸시하면 GitHub Actions가 자동으로 배포합니다.
+- 메시지 `id`는 64비트 정수입니다. Node.js에서는 정밀도 손실을 막기 위해 문자열로 노출합니다. Python은 `int`, Java는 `long`입니다.
+- 웹훅 URL을 등록한 앱은 게이트웨이에 연결할 수 없습니다. 둘 중 하나만 씁니다.
+- 웹훅은 1초 안에 2xx로 응답한 뒤 `reply()`를 호출해야 합니다.
+- 콜백 토큰은 발급 후 5분간, 한 번만 쓸 수 있습니다.
+- 게이트웨이의 이벤트 버퍼는 연결당 100개입니다. 오래 끊겼다가 RESUME하면 그 사이 이벤트는 못 받을 수 있습니다.
+
+## 개발
+
+```bash
+cd nodejs && npm install && npm test
+cd python && pip install -e ".[dev]" && pytest
+cd java && mvn test
+```
+
+테스트는 모의 게이트웨이/REST 서버를 띄워 프로토콜 흐름(핸드셰이크, DISPATCH와 콜백, 1001/4009/4001 재연결)을 확인합니다.
+
+배포 절차는 [PUBLISHING.md](PUBLISHING.md)에 있습니다.
 
 ## 라이선스
 
