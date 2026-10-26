@@ -116,4 +116,4 @@ gateway.connect();
 
 ## 라이선스
 
-MIT
+[MIT](LICENSE)
