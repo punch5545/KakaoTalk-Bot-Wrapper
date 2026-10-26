@@ -57,7 +57,17 @@ Actions 탭의 **Run workflow**로 레지스트리를 하나씩 골라 실행할
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-세 잡이 끝나면 npmjs.com / pypi.org / central.sonatype.com 에서 패키지가 보입니다 (Central은 반영에 수십 분 걸릴 수 있습니다).
+세 잡이 끝나면 pypi.org / central.sonatype.com 에서 패키지가 보입니다 (Central은 반영에 수십 분 걸릴 수 있습니다).
+
+**npm은 한 단계가 더 있습니다.** npm은 2026년부터 CI에서 올린 버전을 바로 공개하지 않고
+*stage 대기열*에 넣습니다(staged publishing). 워크플로가 성공해도 레지스트리에는
+`0.0.0-stage` 자리표시자만 보이고, 실제 버전은 메인테이너가 2FA로 승인해야 공개됩니다.
+
+- 웹: npmjs.com → 패키지 페이지 → **Staged** 탭에서 해당 버전을 Approve
+- CLI (npm 11.15+): `npm stage list kakaotalk-bot` 으로 stage id 확인 후 `npm stage approve <stage-id>`
+
+승인 뒤 `latest` 태그가 실제 버전을 가리키는지 `npm view kakaotalk-bot dist-tags`로 확인합니다.
+`0.0.0-stage`는 npm이 만든 prerelease 자리표시자라 설치 범위에 잡히지 않으며 그대로 두어도 됩니다.
 
 ## 방법 B. 로컬에서 직접 배포
 
